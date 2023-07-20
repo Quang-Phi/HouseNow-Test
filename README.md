@@ -91,3 +91,4 @@ to the repo via email to `binhdv@thenowproject.com.vn` and
   - [ ] Finish Question 6
   - [ ] Run `yarn lint` with no errors
   - [ ] Run `yarn type-check` with no errors
+# Front-end-take-home-assignment
