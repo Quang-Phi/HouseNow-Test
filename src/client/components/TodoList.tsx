@@ -1,6 +1,6 @@
-import type { SVGProps } from 'react'
-
+import { type SVGProps } from 'react'
 import * as Checkbox from '@radix-ui/react-checkbox'
+import { useAutoAnimate } from '@formkit/auto-animate/react'
 
 import { api } from '@/utils/client/api'
 
@@ -63,28 +63,118 @@ import { api } from '@/utils/client/api'
  *  - https://auto-animate.formkit.com
  */
 
-export const TodoList = () => {
+export const TodoList = ({
+  statusArr,
+}: {
+  statusArr: string[] | undefined
+}) => {
+  const apiContext = api.useContext()
+
+  //handle get data with prop by tabs
   const { data: todos = [] } = api.todo.getAll.useQuery({
-    statuses: ['completed', 'pending'],
+    statuses: statusArr as ('completed' | 'pending')[],
   })
 
+  //handle update status todo
+  const { mutate: updateTodoStatus } = api.todoStatus.update.useMutation({
+    onSuccess: () => {
+      apiContext.todo.getAll.refetch()
+    },
+  })
+
+  //handle delete todo
+  const { mutate: deleteTodoItem } = api.todo.delete.useMutation({
+    onSuccess: () => {
+      apiContext.todo.getAll.refetch()
+    },
+  })
+
+  //animate
+  const [animateTodo] = useAutoAnimate()
   return (
-    <ul className="grid grid-cols-1 gap-y-3">
+    <ul ref={animateTodo} className="grid grid-cols-1 gap-y-3">
       {todos.map((todo) => (
         <li key={todo.id}>
-          <div className="flex items-center rounded-12 border border-gray-200 px-4 py-3 shadow-sm">
-            <Checkbox.Root
-              id={String(todo.id)}
-              className="flex h-6 w-6 items-center justify-center rounded-6 border border-gray-300 focus:border-gray-700 focus:outline-none data-[state=checked]:border-gray-700 data-[state=checked]:bg-gray-700"
-            >
-              <Checkbox.Indicator>
-                <CheckIcon className="h-4 w-4 text-white" />
-              </Checkbox.Indicator>
-            </Checkbox.Root>
+          <div
+            className={`
+              flex 
+              items-center 
+              gap-4 
+              rounded-12 
+              border 
+              border-gray-200 
+              p-3 
+              pl-4
+              shadow-sm 
+              ${
+                todo.status === 'completed'
+                  ? 'border-gray-200 bg-gray-50 line-through'
+                  : ''
+              }`}
+          >
+            <div className="group-input flex flex-1">
+              <Checkbox.Root
+                id={String(todo.id)}
+                checked={todo.status === 'completed'}
+                onClick={() => {
+                  const newStatus =
+                    todo.status === 'pending' ? 'completed' : 'pending'
+                  updateTodoStatus({
+                    todoId: todo.id,
+                    status: newStatus,
+                  })
+                }}
+                className="
+                    flex 
+                    h-6 
+                    w-6 
+                    items-center 
+                    justify-center 
+                    rounded-6 
+                    border 
+                    border-gray-300 
+                    focus:border-gray-700 
+                    focus:outline-none 
+                    data-[state=checked]:border-gray-700 
+                    data-[state=checked]:bg-gray-700"
+              >
+                <Checkbox.Indicator>
+                  <CheckIcon className="h-4 w-4 text-white" />
+                </Checkbox.Indicator>
+              </Checkbox.Root>
 
-            <label className="block pl-3 font-medium" htmlFor={String(todo.id)}>
-              {todo.body}
-            </label>
+              <label
+                htmlFor={String(todo.id)}
+                className={`
+                    ${todo.status === 'completed' ? 'text-gray-500' : ''}
+                    block
+                    flex-1 
+                    pl-3 
+                    font-medium`}
+              >
+                {todo.body}
+              </label>
+            </div>
+
+            <span
+              onClick={() => {
+                deleteTodoItem({
+                  id: todo.id,
+                })
+              }}
+              className="
+                  flex 
+                  h-8 
+                  w-8 
+                  cursor-pointer 
+                  items-center 
+                  justify-center 
+                  gap-2 
+                  rounded-[0.625rem] 
+                  p-1"
+            >
+              <XMarkIcon />
+            </span>
           </div>
         </li>
       ))}
